@@ -21,6 +21,7 @@
 float temperatureFunction();
 void printLCD( float averageTemperature);
 void checkExtremeValues(float averageTemperature);
+int checkProximity();
 
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
@@ -34,7 +35,12 @@ const float extremeLow = 21.5;
 const float extremeHigh = 22.5;
 const float extremeFan = 23;
 float temperature[24], averageTemperature;
+float lastAverageTemperature = 0;
 int i;
+const int trigPin = 7;    // Trigger
+const int echoPin = 6;    // Echo
+unsigned long duration, cm, inches;
+int isSomeoneClose = 0;
 
 void setup() {
 
@@ -57,6 +63,10 @@ void setup() {
   lcd.setCursor(0, 1);
   // print to the second line
   lcd.print("PROJECT");
+
+  // HC-SR04
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   
   // open a serial connection to display values
   Serial.begin(9600);
@@ -75,20 +85,35 @@ void loop() {
       lcd.print("CALCULATING...");
     }
     // read temperature in Celsius
-    temperature[i] = temperatureFunction();    
+    temperature[i] = temperatureFunction();
+    isSomeoneClose = checkProximity();
+    if( isSomeoneClose == 1){
+        // clean up the screen before printing a new reply
+        lcd.clear();
+        // set the cursor to column 0, line 0
+        lcd.setCursor(0, 0);
+        // print some text
+        lcd.print("AVG. TEMP.:");
+        lcd.print(lastAverageTemperature);
+        // move the cursor to the second line
+        lcd.setCursor(0, 1);
+        lcd.print("LAST TEMP.:");
+        lcd.print(temperature[i]);
+    }
   }
 
   for( i = 0; i < 24; i++){  
     averageTemperature = averageTemperature + temperature[i];
   }
   averageTemperature = averageTemperature/24;
+  lastAverageTemperature = averageTemperature;
   printLCD( averageTemperature);
   Serial.print("Average Temperature: ");
   Serial.println(averageTemperature);
 
   //check for fan
   checkExtremeValues( averageTemperature);
-    
+  
 }
 
 float temperatureFunction(){
@@ -168,4 +193,40 @@ void checkExtremeValues(float averageTemperature){
     lcd.setCursor(0, 0);
     //lcd.print("CALCULATING...");
   }
+}
+
+int checkProximity(){
+  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
+  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(15);
+  digitalWrite(trigPin, LOW);
+ 
+  // Read the signal from the sensor: a HIGH pulse whose
+  // duration is the time (in microseconds) from the sending
+  // of the ping to the reception of its echo off of an object.
+  if( duration = pulseIn(echoPin, HIGH)){
+ 
+    // Convert the time into a distance
+    cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
+    inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
+  
+    Serial.print(inches);
+    Serial.print("in, ");
+    Serial.print(cm);
+    Serial.print("cm");
+    Serial.println();
+    if( cm < 10){
+      return 1;
+    }
+    else{
+      return 0;
+    }
+  }
+  else{
+    Serial.println("Nobody Nearby");
+    return 0;
+  } 
 }
