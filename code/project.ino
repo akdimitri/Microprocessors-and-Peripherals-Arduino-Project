@@ -1,20 +1,9 @@
 /*
-  Arduino Starter Kit example
-  Project 3 - Love-O-Meter
 
-  This sketch is written to accompany Project 3 in the Arduino Starter Kit
 
   Parts required:
   - one TMP36 temperature sensor
-  - three red LEDs
-  - three 220 ohm resistors
 
-  created 13 Sep 2012
-  by Scott Fitzgerald
-
-  http://www.arduino.cc/starterKit
-
-  This example code is part of the public domain.
 */
 // include the library code:
 #include <LiquidCrystal.h>
@@ -139,6 +128,36 @@ float temperatureFunction(){
   float temperature = (voltage - .5) * 100;
   Serial.println(temperature);
 
+  // check extreme values
+  if( temperature < extremeLow){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("WARNING");
+    lcd.setCursor(0, 1);
+    lcd.print("TEMP < ");
+    lcd.print(extremeLow);
+    digitalWrite(BLUE, HIGH);
+    digitalWrite(RED, LOW);
+  }
+  else if( temperature > extremeHigh){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("WARNING");
+    lcd.setCursor(0, 1);
+    lcd.print("TEMP > ");
+    lcd.print(extremeHigh);
+    digitalWrite(RED, HIGH); 
+    digitalWrite(BLUE, LOW);   
+  }
+  else{
+    // clear LEDS
+    digitalWrite(RED, LOW);
+    digitalWrite(BLUE, LOW);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("CALCULATING...");
+  }
+
  return temperature;
 }
 
@@ -162,37 +181,7 @@ void checkExtremeValues(float averageTemperature){
   }
   else{
     digitalWrite(GREEN, LOW);
-  }
-
-   // check extreme values
-  if( averageTemperature < extremeLow){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("WARNING");
-    lcd.setCursor(0, 1);
-    lcd.print("TEMP < ");
-    lcd.print(extremeLow);
-    digitalWrite(BLUE, HIGH);
-    digitalWrite(RED, LOW);
-  }
-  else if( averageTemperature > extremeHigh){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("WARNING");
-    lcd.setCursor(0, 1);
-    lcd.print("TEMP > ");
-    lcd.print(extremeHigh);
-    digitalWrite(RED, HIGH); 
-    digitalWrite(BLUE, LOW);   
-  }
-  else{
-    // clear LEDS
-    digitalWrite(RED, LOW);
-    digitalWrite(BLUE, LOW);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    //lcd.print("CALCULATING...");
-  }
+  }   
 }
 
 int checkProximity(){
