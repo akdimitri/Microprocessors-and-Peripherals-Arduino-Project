@@ -1,21 +1,33 @@
 /*
-
-
-  Parts required:
-  - one TMP36 temperature sensor
-
+ * Authors: 1. Dimitrios Antoniadis
+ *          2. Vasileios Dimitriadis
+ *          
+ * email:   1. akdimitri@auth.gr          
+ *          2. dimvasdim@auth.gr
+ *          
+ * University:  Aristotle University of Thessaloniki (AUTH)         
+ * Semester:    8th 
+ * Subject:     Microprocessors and Peripherals  
+ * 
+ * Parts required:
+ * - one TMP36 temperature sensor
+ * - one LCD 16x2 JHD659 M10 1.1
+ * - one HC-SR04 proximity sensor
 */
+
 // include the library code:
 #include <LiquidCrystal.h>
+
+// functions declaration
 float temperatureFunction();
 void printLCD( float averageTemperature);
-void checkExtremeValues(float averageTemperature);
+void checkExtremeFan(float averageTemperature);
 int checkProximity();
 
-// initialize the library with the numbers of the interface pins
+// initialize the LCD function with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-// named constant for the pin the sensor is connected to
+// global variables declaration
 const int sensorPin = A0;
 const int BLUE = 8;
 const int RED = 9;
@@ -31,6 +43,7 @@ const int echoPin = 6;    // Echo
 unsigned long duration, cm, inches;
 int isSomeoneClose = 0;
 
+// setup function
 void setup() {
 
   //LEDS
@@ -62,20 +75,27 @@ void setup() {
 }
 
 void loop() {
-  averageTemperature = 0;
   
+  averageTemperature = 0;
+
+  // 24*5 secs = 2 minutes
   for( i = 0; i < 24; i++){
     // delay 5 seconds = 5 * 1000 milliseconds
     delay(5*1000);
 
+    // if 10 seconds elapsed since previous average temperature print cleaer LCD
     if( i == 1){
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("CALCULATING...");
     }
+    
     // read temperature in Celsius
     temperature[i] = temperatureFunction();
+
+    // check if someone is close
     isSomeoneClose = checkProximity();
+    
     if( isSomeoneClose == 1){
         // clean up the screen before printing a new reply
         lcd.clear();
@@ -91,21 +111,37 @@ void loop() {
     }
   }
 
+  // calculate average temperature
   for( i = 0; i < 24; i++){  
     averageTemperature = averageTemperature + temperature[i];
   }
   averageTemperature = averageTemperature/24;
+
+  // store average temperature
   lastAverageTemperature = averageTemperature;
+
+  // print average temperature
   printLCD( averageTemperature);
   Serial.print("Average Temperature: ");
   Serial.println(averageTemperature);
 
   //check for fan
-  checkExtremeValues( averageTemperature);
+  checkExtremeFan( averageTemperature);
   
 }
 
+/***************
+* Sub-routines *
+***************/
+
+
+/* temperatureFunction: this function is responsible for reading 
+ *                      the analog value of temperature function, 
+ *                      also is responsible for checking extreme
+ *                      temperature values.
+ */
 float temperatureFunction(){
+  
   // read the value on AnalogIn pin 0 and store it in a variable
   int sensorVal = analogRead(sensorPin);
 
@@ -152,15 +188,16 @@ float temperatureFunction(){
   else{
     // clear LEDS
     digitalWrite(RED, LOW);
-    digitalWrite(BLUE, LOW);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("CALCULATING...");
+    digitalWrite(BLUE, LOW);    
   }
 
  return temperature;
 }
 
+/* printLCD(): this function is responsible for
+ *             printing average temperature to
+ *             LCD screen.
+ */
 void printLCD( float averageTemperature){
   // clean up the screen before printing a new reply
   lcd.clear();
@@ -173,7 +210,11 @@ void printLCD( float averageTemperature){
   lcd.print(averageTemperature);
 }
 
-void checkExtremeValues(float averageTemperature){
+/* checkExtremeFan(): this function is responsible 
+ *                    for checking whether fan is needed
+ *                    to be turned on
+ */
+void checkExtremeFan(float averageTemperature){
 
   // check fan
   if( averageTemperature > extremeFan){
@@ -184,6 +225,10 @@ void checkExtremeValues(float averageTemperature){
   }   
 }
 
+
+/* checkProximity(): this function is responsible for acknowledging wheter 
+ *                   someone is close or not.
+ */
 int checkProximity(){
   // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
