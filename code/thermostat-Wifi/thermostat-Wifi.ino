@@ -223,7 +223,7 @@ void loop(){
     Serial.println(temperature[i]);
 
     // check extreme values
-  if( temperature[i] < extremeLow && i > 1){
+  if( temperature[i] < extremeLow && i > 0){
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("WARNING");
@@ -231,7 +231,7 @@ void loop(){
     lcd.print("TEMP < ");
     lcd.print(extremeLow);    
   }
-  else if( temperature[i] > extremeHigh && i > 1){
+  else if( temperature[i] > extremeHigh && i > 0){
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("WARNING");
@@ -241,7 +241,7 @@ void loop(){
     //digitalWrite(RED, HIGH); 
     //digitalWrite(BLUE, LOW);   
   }
-  else if( i > 1){
+  else if( i > 0){
     lcd.clear();   
   }
   
