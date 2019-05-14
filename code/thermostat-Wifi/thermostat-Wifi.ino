@@ -1,23 +1,40 @@
+/*
+ * Authors: 1. Dimitrios Antoniadis
+ *          2. Vasileios Dimitriadis
+ *          
+ * email:   1. akdimitri@auth.gr          
+ *          2. dimvasdim@auth.gr
+ *          
+ * University:  Aristotle University of Thessaloniki (AUTH)         
+ * Semester:    8th 
+ * Subject:     Microprocessors and Peripherals  
+ * 
+ * Parts required:
+ * - one Wemos D1 R2 (ESP8266)
+ * - one TMP36 temperature sensor
+ * - one LCD 16x2 JHD659 M10 1.1
+ * - one HC-SR04 proximity sensor
+*/
+
+/* include Libraries */
+#include <Ticker.h>
 #include <ESP8266WiFi.h>
 #include <LiquidCrystal.h>
 #include "Gsender.h"
 
-#pragma region Globals
+/* Global Variable Declaration */
+Ticker INTERRUPT;
 const char* ssid = "Dimitris2";                             // WIFI network name
 const char* password = "69451070306945558718";              // WIFI network password
 uint8_t connection_state = 0;                               // Connected to WIFI or not
 uint16_t reconnect_interval = 10000;                        // If not connected wait time to try again
 const int sensorPin = A0;
-int sensorVal, i;
+int i, isSomeoneClose = 0;
 float  sum, temperature[24], averageTemperature;
-const float extremeLow = 21.5;
-const float extremeHigh = 22.5;
-const float extremeFan = 23;
-const int trigPin = 12;    // Trigger
-const int echoPin = 13;    // Echo
+const float extremeLow = 21.5, extremeHigh = 22.5, extremeFan = 23;
+const int trigPin = 12, echoPin = 13;    
 unsigned long duration, cm, inches;
-int isSomeoneClose = 0;
-#pragma endregion Globals
+bool FAN = false;
 
 // initialize the LCD function with the numbers of the interface pins
 // D0 -> GPIO16
@@ -28,8 +45,12 @@ int isSomeoneClose = 0;
 // D5 -> GPIO14
 // D6 -> GPIO12
 // D7 -> GPIO13
-LiquidCrystal lcd(16, 5, 4, 0, 2, 14);      
+LiquidCrystal lcd(16, 5, 4, 0, 2, 14);
 
+
+/* WiFiConnect: this function is responsible for connecting 
+ *              MCU to WiFi.
+ */
 uint8_t WiFiConnect(const char* nSSID = nullptr, const char* nPassword = nullptr)
 {
     static uint16_t attempt = 0;
@@ -63,6 +84,10 @@ uint8_t WiFiConnect(const char* nSSID = nullptr, const char* nPassword = nullptr
     return true;
 }
 
+
+/* Awaits(): this function tries continuously to connect to WiFi.
+ *           It stops when connection has been established.
+ */
 void Awaits()
 {
     uint32_t ts = millis();
@@ -74,23 +99,6 @@ void Awaits()
             ts = millis();
         }
     }
-}
-
-
-/* printLCD(): this function is responsible for
- *             printing average temperature to
- *             LCD screen.
- */
-void printLCD( float averageTemperature){
-  // clean up the screen before printing a new reply
-  lcd.clear();
-  // set the cursor to column 0, line 0
-  lcd.setCursor(0, 0);
-  // print some text
-  lcd.print("AVG. TEMP.");
-  // move the cursor to the second line
-  lcd.setCursor(0, 1);
-  lcd.print(averageTemperature);
 }
 
 
@@ -109,18 +117,18 @@ int checkProximity(){
   // Read the signal from the sensor: a HIGH pulse whose
   // duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  if( duration = pulseIn(echoPin, HIGH)){
- 
+  if( duration = pulseIn(echoPin, HIGH)){ 
     // Convert the time into a distance
     cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
     inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
   
-    Serial.print(inches);
-    Serial.print("in, ");
-    Serial.print(cm);
-    Serial.print("cm");
-    Serial.println();
+    //Serial.print(inches);
+    //Serial.print("in, ");
+    //Serial.print(cm);
+    //Serial.print("cm");
+    //Serial.println();
     if( cm < 10){
+      Serial.println("Somebody is close: " + String(cm) + "cm" );
       return 1;
     }
     else{
@@ -134,6 +142,70 @@ int checkProximity(){
 }
 
 
+/* printLCD(): this function is responsible for
+ *             printing average temperature to
+ *             LCD screen.
+ */
+void printLCD( String line1, String line2){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(line1);
+  lcd.setCursor(0, 1);
+  lcd.print(line2);
+}
+
+
+/* interruptVector(): this function checks periodically every 0.5 seconds
+ *                    if someone is nearby. Then it prints average Temperature 
+ *                    and the latest temperature measurment.
+ */
+void interruptVector(){
+
+  // check if someone is close
+  isSomeoneClose = checkProximity();
+  String line1, line2;
+  if( isSomeoneClose == 1){
+    line1 = String("AVG:" + String( averageTemperature, 3));
+    if(i == 0)
+      line2 = String("Last TEMP: " + String(temperature[24], 3));
+    else
+      line2 = String("Last TEMP: " + String(temperature[i-1], 3));
+
+      printLCD( line1, line2);      
+  }
+}
+/* checkExtremeValues: this function is responsible for cheking wether
+ *                     temperature is Greater than a high value or
+ *                     Lower than a low value. Accordingly, this function
+ *                     turns on/off BLUE/RED LEDS and prints respectively 
+ *                     on LCD the suitable message. LCD is used only after
+ *                     i > 0 and that's because only then 10 secs have elapsed
+ *                     since previous average value print.
+ */
+void checkExtremeValues( float temperature, int i){
+  String line1, line2;
+  if( temperature < extremeLow && i > 0){      
+      line1 = String("Warning: LOW");
+      line2 = String( "Temp      " + String(temperature, 3));
+      printLCD( line1, line2);
+      //digitalWrite(BLUE, HIGH);
+      //digitalWrite(RED, LOW);
+    }
+    else if( temperature > extremeHigh && i > 0){
+      line1 = String("Warning: HIGH");
+      line2 = String( "Temp      " + String(temperature, 3));
+      printLCD( line1, line2);
+      //digitalWrite(RED, HIGH); 
+      //digitalWrite(BLUE, LOW);   
+    }
+    else{            
+      //digitalWrite(RED, LOW);
+      //digitalWrite(BLUE, LOW);
+      if( i > 0)
+        printLCD("Calculating", " ");      
+    }
+}
+
 /* checkExtremeFan(): this function is responsible 
  *                    for checking whether fan is needed
  *                    to be turned on
@@ -142,140 +214,102 @@ void checkExtremeFan(float averageTemperature){
 
   // check fan
   if( averageTemperature > extremeFan){
-    //digitalWrite(GREEN, HIGH);
-    Gsender *gsender = Gsender::Instance();    // Getting pointer to class instance
-    String subject = "FAN = ON!";
-    String value = String(averageTemperature, DEC);
-    String message = String("FAN TURNED ON : " + value);
-    if(gsender->Subject(subject)->Send("mitsos1996@yahoo.com", message)) {
-        Serial.println("Message send.");
-    } else {
-        Serial.print("Error sending message: ");
-        Serial.println(gsender->getError());
-    }     
-    
+    if( FAN == false){
+      Serial.println("1.FAN is " + String(FAN) + ": TURN it ON");
+      //digitalWrite(GREEN, HIGH);
+      Gsender *gsender = Gsender::Instance();    // Getting pointer to class instance
+      String subject = "FAN = ON!";
+      String value = String(averageTemperature, 3);
+      String message = String("FAN TURNED ON : " + value);
+      if(gsender->Subject(subject)->Send("mitsos1996@yahoo.com", message)) {
+          Serial.println("Message send.");
+      } else {
+          Serial.print("Error sending message: ");
+          Serial.println(gsender->getError());
+      }
+      FAN = true;
+    }
+    else{
+      Serial.println("2.FAN is " + String(FAN) + ": KEEP it ON");   
+    }
   }
   else{
-    
+    FAN = false;
+    Serial.println("3.FAN is " + String(FAN));
     //digitalWrite(GREEN, LOW);
   }   
 }
 
 
 
-
+/* setup(): This function is executed only once at the POWER ON 
+ *          or at RESET
+ */
 void setup()
 {
-    Serial.begin(115200);
-    connection_state = WiFiConnect();
-    if(!connection_state)  // if not connected to WIFI
-        Awaits();          // constantly trying to connect
+  Serial.begin(115200);
+  connection_state = WiFiConnect();
+  if(!connection_state)  // if not connected to WIFI
+      Awaits();          // constantly trying to connect
+
+    /* Setup LCD */
+  lcd.begin(16, 2);  
+  lcd.print("ARDUINO");  
+  lcd.setCursor(0, 1);  
+  lcd.print("PROJECT");
 
 
-    //LCD
-    // set up the number of columns and rows on the LCD
-    lcd.begin(16, 2);
-    // Print a message to the LCD.
-    lcd.print("ARDUINO");
-    // set the cursor to column 0, line 1
-    // line 1 is the second row, since counting begins with 0
-    lcd.setCursor(0, 1);
-    // print to the second line
-    lcd.print("PROJECT");
+  // HC-SR04
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);   
 
+  /* Setup ticker function */
+  INTERRUPT.attach( 0.5, interruptVector);
 
-    // HC-SR04
-    pinMode(trigPin, OUTPUT);
-    pinMode(echoPin, INPUT);   
+  /* Setup Serial Communication */
+  Serial.begin(115200);
+  
 }
 
+/* loop(): this function is the main function. It executes
+ *         continuously.
+ */
 void loop(){
-  sum = 0;
+  sum = 0;                    // this variable holds the sum of temperatures
+  Serial.println("\n\n\nNew Measurement");
   for( i = 0; i < 24; i++){
-
-    // if 10 seconds elapsed since previous average temperature print clear LCD
-    if( i == 1){
+    delay(5*1000);
+    
+    if( i == 1){              // 10 seconds have elapsed since avg. temp. print on LCD
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("CALCULATING...");
     }
     
-    // read the value on AnalogIn pin 0 and store it in a variable
-    sensorVal= analogRead(sensorPin);
-
-    // send the 10-bit sensor value out the serial port
-    Serial.print("sensor Value: ");
-    Serial.print(sensorVal);
-  
-    // convert the ADC reading to voltage
-    float voltage = (sensorVal / 1024.0) * 3.1;
-  
-    // Send the voltage level out the Serial port
-    Serial.print(", Volts: ");
-    Serial.print(voltage);
-  
+    // convert the ADC reading to voltage   
     // convert the voltage to temperature in degrees C
     // the sensor changes 10 mV per degree
     // the datasheet says there's a 500 mV offset
     // ((voltage - 500 mV) times 100)
-    Serial.print(", degrees C: ");
-    temperature[i] = (voltage - .5) * 100;
-    Serial.println(temperature[i]);
+    int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
+    float voltage = (sensorVal / 1024.0) * 3.1;         // 3.1 is used after calibration. Nomrally 3.3 should be used
+    temperature[i] = (voltage - .5) * 100;              // since 3.3 V is the Operation Vlotage of MCU.
+    String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature[i], 3));
+    Serial.println(printLine);
 
-    // check extreme values
-  if( temperature[i] < extremeLow && i > 0){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("WARNING");
-    lcd.setCursor(0, 1);
-    lcd.print("TEMP < ");
-    lcd.print(extremeLow);    
-  }
-  else if( temperature[i] > extremeHigh && i > 0){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("WARNING");
-    lcd.setCursor(0, 1);
-    lcd.print("TEMP > ");
-    lcd.print(extremeHigh);
-    //digitalWrite(RED, HIGH); 
-    //digitalWrite(BLUE, LOW);   
-  }
-  else if( i > 0){
-    lcd.clear();   
-  }
+    sum = sum + temperature[i];   
   
-
-  // check if someone is close
-  isSomeoneClose = checkProximity();
-  
-  if( isSomeoneClose == 1){
-      // clean up the screen before printing a new reply
-      lcd.clear();
-      // set the cursor to column 0, line 0
-      lcd.setCursor(0, 0);
-      // print some text
-      lcd.print("AVG. TEMP.:");
-      lcd.print(averageTemperature);
-      // move the cursor to the second line
-      lcd.setCursor(0, 1);
-      lcd.print("LAST TEMP.:");
-      lcd.print(temperature[i]);
-  }
-  
-  sum = sum + temperature[i];
-
-  delay(5*1000);
-      
+    checkExtremeValues( temperature[i], i);        
  }
 
+ /* Calculate Average Temperature */
   averageTemperature = sum/24;
+  String line1 = String("Avg. Temp.");
+  String line2 = String(averageTemperature, 3);
+  printLCD( line1, line2);
+  Serial.println("\n\n\n Average Temperature: " + String(averageTemperature, 3));
   
+  //check for fan
   checkExtremeFan( averageTemperature);
-  
-  // print average temperature
-  printLCD( averageTemperature);
-  Serial.print("Average Temperature: ");
-  Serial.println(averageTemperature);
   
 }

@@ -10,6 +10,7 @@
  * Subject:     Microprocessors and Peripherals  
  * 
  * Parts required:
+ * - one Arduino UNO
  * - one TMP36 temperature sensor
  * - one LCD 16x2 JHD659 M10 1.1
  * - one HC-SR04 proximity sensor
@@ -19,34 +20,31 @@
 #include <LiquidCrystal.h>
 
 // functions declaration
-void printLCD( float averageTemperature);
+void checkExtremeValues( float temperature, int i);
+void printLCD( String line1, String line2);
 void checkExtremeFan(float averageTemperature);
 int checkProximity();
 
 // initialize the LCD function with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-// global variables declaration
-const int sensorPin = A0;
-const int BLUE = 8;
-const int RED = 9;
-const int GREEN = 13;
-const float extremeLow = 21.5;
-const float extremeHigh = 22.5;
-const float extremeFan = 23;
-float temperature[24], averageTemperature;
-float lastAverageTemperature = 0;
-int i;
-const int trigPin = 7;    // Trigger
-const int echoPin = 6;    // Echo
+/* Global Variables Declaration */
+const int sensorPin = A0, BLUE = 8, RED = 9;
+const int GREEN = 13, trigPin = 7, echoPin = 6;
+const float extremeLow = 21.5, extremeHigh = 22.5, extremeFan = 23;
+float temperature[24], averageTemperature, sum = 0;
+int i, isSomeoneClose = 0, counter = 0;
 unsigned long duration, cm, inches;
-int isSomeoneClose = 0;
+bool FAN = false;
 
-// setup function
+
+
+/* setup(): This function is executed only once at the POWER ON 
+ *          or at RESET
+ */
 void setup() {
 
-  //LEDS
-  // set the digital pin as output:
+  /* Define PINs Mode */
   pinMode(BLUE, OUTPUT);
   pinMode(RED, OUTPUT);
   pinMode(GREEN, OUTPUT);
@@ -54,124 +52,67 @@ void setup() {
   digitalWrite(BLUE, LOW);
   digitalWrite(GREEN, LOW);
   
-  //LCD
-  // set up the number of columns and rows on the LCD
-  lcd.begin(16, 2);
-  // Print a message to the LCD.
-  lcd.print("ARDUINO");
-  // set the cursor to column 0, line 1
-  // line 1 is the second row, since counting begins with 0
-  lcd.setCursor(0, 1);
-  // print to the second line
+  /* Setup LCD */
+  lcd.begin(16, 2);  
+  lcd.print("ARDUINO");  
+  lcd.setCursor(0, 1);  
   lcd.print("PROJECT");
 
-  // HC-SR04
+  /* Setup HC-SR04 */
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  
-  // open a serial connection to display values
+
+  /* Enable TIMER2 OVERFLOW INTERRUPT */
+  TIMSK2 = (TIMSK2 & B11111110) | 0x01;       // Arduino UNO has an ATmega328P CPU
+  TCCR2B = (TCCR2B & B00111000) | 0x07;       // Thus, ENABLE bit TIMSK:0 and SET prescaler to clk/1024
+   
+  /* Setup Serial Communication */
   Serial.begin(9600);
+
+  /* Enable Interrupts Globally */
+  sei();
 }
 
+
+/* loop(): this function is the main function. It executes
+ *         continuously.
+ */
 void loop() {
   
-  averageTemperature = 0;
-
-  // 24*5 secs = 2 minutes
+  sum = 0;                    // this variable holds the sum of temperatures
+  Serial.println("\n\n\nNew Measurement");
   for( i = 0; i < 24; i++){
-    // delay 5 seconds = 5 * 1000 milliseconds
     delay(5*1000);
 
-    // if 10 seconds elapsed since previous average temperature print cleaer LCD
-    if( i == 1){
+    if( i == 1){              // 10 seconds have elapsed since avg. temp. print on LCD
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("CALCULATING...");
     }
-    
-    // read temperature in Celsius
-    // read the value on AnalogIn pin 0 and store it in a variable
-    int sensorVal = analogRead(sensorPin);
-  
-    // send the 10-bit sensor value out the serial port
-    Serial.print("sensor Value: ");
-    Serial.print(sensorVal);
-  
-    // convert the ADC reading to voltage
-    float voltage = (sensorVal / 1024.0) * 5.0;
-  
-    // Send the voltage level out the Serial port
-    Serial.print(", Volts: ");
-    Serial.print(voltage);
-  
+
+    // convert the ADC reading to voltage   
     // convert the voltage to temperature in degrees C
     // the sensor changes 10 mV per degree
     // the datasheet says there's a 500 mV offset
     // ((voltage - 500 mV) times 100)
-    Serial.print(", degrees C: ");
+    int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
+    float voltage = (sensorVal / 1024.0) * 5.0;
     temperature[i] = (voltage - .5) * 100;
-    Serial.println(temperature[i]);
+    String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature[i], 3));
+    Serial.println(printLine);
+      
+    sum = sum + temperature[i];   
   
-    // check extreme values
-    if( temperature[i] < extremeLow && i > 0){
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("WARNING");
-      lcd.setCursor(0, 1);
-      lcd.print("TEMP < ");
-      lcd.print(extremeLow);
-      digitalWrite(BLUE, HIGH);
-      digitalWrite(RED, LOW);
-    }
-    else if( temperature[i] > extremeHigh && i > 0){
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("WARNING");
-      lcd.setCursor(0, 1);
-      lcd.print("TEMP > ");
-      lcd.print(extremeHigh);
-      digitalWrite(RED, HIGH); 
-      digitalWrite(BLUE, LOW);   
-    }
-    else{
-      // clear LEDS
-      digitalWrite(RED, LOW);
-      digitalWrite(BLUE, LOW);
-      if( i > 0);
-    }
-
-    // check if someone is close
-    isSomeoneClose = checkProximity();
-    
-    if( isSomeoneClose == 1){
-        // clean up the screen before printing a new reply
-        lcd.clear();
-        // set the cursor to column 0, line 0
-        lcd.setCursor(0, 0);
-        // print some text
-        lcd.print("AVG. TEMP.:");
-        lcd.print(lastAverageTemperature);
-        // move the cursor to the second line
-        lcd.setCursor(0, 1);
-        lcd.print("LAST TEMP.: ");
-        lcd.print(temperature[i]);
-    }
+    checkExtremeValues( temperature[i], i);     
   }
 
-  // calculate average temperature
-  for( i = 0; i < 24; i++){  
-    averageTemperature = averageTemperature + temperature[i];
-  }
+  /* Calculate Average Temperature */
   averageTemperature = averageTemperature/24;
-
-  // store average temperature
-  lastAverageTemperature = averageTemperature;
-
-  // print average temperature
-  printLCD( averageTemperature);
-  Serial.print("Average Temperature: ");
-  Serial.println(averageTemperature);
-
+  String line1 = String("Avg. Temp.");
+  String line2 = String(averageTemperature, 3);
+  printLCD( line1, line2);
+  Serial.println("\n\n\n Average Temperature: " + String(averageTemperature, 3));
+  
   //check for fan
   checkExtremeFan( averageTemperature);
   
@@ -182,27 +123,48 @@ void loop() {
 ***************/
 
 
-/* temperatureFunction: this function is responsible for reading 
- *                      the analog value of temperature function, 
- *                      also is responsible for checking extreme
- *                      temperature values.
- */
-
-
 /* printLCD(): this function is responsible for
  *             printing average temperature to
  *             LCD screen.
  */
-void printLCD( float averageTemperature){
-  // clean up the screen before printing a new reply
+void printLCD( String line1, String line2){
   lcd.clear();
-  // set the cursor to column 0, line 0
   lcd.setCursor(0, 0);
-  // print some text
-  lcd.print("AVG. TEMP.");
-  // move the cursor to the second line
+  lcd.print(line1);
   lcd.setCursor(0, 1);
-  lcd.print(averageTemperature);
+  lcd.print(line2);
+}
+
+/* checkExtremeValues: this function is responsible for cheking wether
+ *                     temperature is Greater than a high value or
+ *                     Lower than a low value. Accordingly, this function
+ *                     turns on/off BLUE/RED LEDS and prints respectively 
+ *                     on LCD the suitable message. LCD is used only after
+ *                     i > 0 and that's because only then 10 secs have elapsed
+ *                     since previous average value print.
+ */
+void checkExtremeValues( float temperature, int i){
+  String line1, line2;
+  if( temperature < extremeLow && i > 0){      
+      line1 = String("Warning: LOW");
+      line2 = String( "Temp      " + String(temperature, 3));
+      printLCD( line1, line2);
+      digitalWrite(BLUE, HIGH);
+      digitalWrite(RED, LOW);
+    }
+    else if( temperature > extremeHigh && i > 0){
+      line1 = String("Warning: HIGH");
+      line2 = String( "Temp      " + String(temperature, 3));
+      printLCD( line1, line2);
+      digitalWrite(RED, HIGH); 
+      digitalWrite(BLUE, LOW);   
+    }
+    else{            
+      digitalWrite(RED, LOW);
+      digitalWrite(BLUE, LOW);
+      if( i > 0)
+        printLCD("Calculating", " ");      
+    }
 }
 
 /* checkExtremeFan(): this function is responsible 
@@ -213,10 +175,20 @@ void checkExtremeFan(float averageTemperature){
 
   // check fan
   if( averageTemperature > extremeFan){
-     digitalWrite(GREEN, HIGH);
+    if( FAN == false){
+      Serial.println("1.FAN is " + String(FAN) + ": TURN it ON");
+      Serial.println("FAN is OFF: TURN it ON");
+      digitalWrite(GREEN, HIGH);
+      FAN = true;
+    }
+    else{
+      Serial.println("2.FAN is " + String(FAN) + ": KEEP it ON");   
+    }
   }
   else{
     digitalWrite(GREEN, LOW);
+    FAN = false;
+    Serial.println("3.FAN is " + String(FAN));
   }   
 }
 
@@ -236,8 +208,7 @@ int checkProximity(){
   // Read the signal from the sensor: a HIGH pulse whose
   // duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  if( duration = pulseIn(echoPin, HIGH)){
- 
+  if( duration = pulseIn(echoPin, HIGH)){ 
     // Convert the time into a distance
     cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
     inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
@@ -248,6 +219,7 @@ int checkProximity(){
     Serial.print("cm");
     Serial.println();
     if( cm < 10){
+      Serial.println("Somebody is close: " + String(cm) + "cm" );
       return 1;
     }
     else{
@@ -258,4 +230,28 @@ int checkProximity(){
     Serial.println("Nobody Nearby");
     return 0;
   } 
+}
+
+/* TIMER2 OVERFLOW INTERRUPT VECTOR: this function checks periodically every 0.5 seconds
+ *                                   if someone is nearby. Then it prints average Temperature 
+ *                                   and the latest temperature measurment.
+ */
+ISR(TIMER2_OVF_vect){
+  counter++;
+  String line1, line2;
+  if( counter == 30){
+    // check if someone is close
+    isSomeoneClose = checkProximity();
+    
+    if( isSomeoneClose == 1){
+        line1 = String("AVG:" + String( averageTemperature, DEC));
+        if(i == 0)
+          line2 = String("Last TEMP: " + String(temperature[24], DEC));
+        else
+          line2 = String("Last TEMP: " + String(temperature[i-1], DEC));
+
+        printLCD( line1, line2);
+        counter = 0;
+    }
+  }
 }
