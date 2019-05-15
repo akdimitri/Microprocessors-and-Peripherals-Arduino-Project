@@ -45,6 +45,7 @@ bool FAN = false;
  */
 void setup() {
 
+  cli();
   /* Define PINs Mode */
   pinMode(BLUE, OUTPUT);
   pinMode(RED, OUTPUT);
@@ -64,8 +65,13 @@ void setup() {
   pinMode(echoPin, INPUT);
 
   /* Enable TIMER2 OVERFLOW INTERRUPT */
+  TCCR2A = 0;
+  TCCR2B = 0;
+  TCNT2  = 0;
   TIMSK2 = (TIMSK2 & B11111110) | 0x01;       // Arduino UNO has an ATmega328P CPU
-  TCCR2B = (TCCR2B & B00111000) | 0x07;       // Thus, ENABLE bit TIMSK:0 and SET prescaler to clk/1024
+  TCCR2B = (TCCR2B & B11111000) | 0x07;       // Thus, ENABLE bit TIMSK:0 and SET prescaler to clk/1024
+  Serial.println(String(TIMSK2, BIN));
+  Serial.println(String(TCCR2B, BIN));
    
   /* Setup Serial Communication */
   Serial.begin(9600);
@@ -74,6 +80,30 @@ void setup() {
   sei();
 }
 
+/* TIMER2 OVERFLOW INTERRUPT VECTOR: this function checks periodically every 0.5 seconds
+ *                                   if someone is nearby. Then it prints average Temperature 
+ *                                   and the latest temperature measurment.
+ */
+ISR(TIMER2_OVF_vect){
+  counter++;
+  //Serial.println("TIMER OVERFLOW: " + counter);
+  if( counter == 30){
+    String line1, line2;
+    //Serial.print("INTERRUPT: ");
+    // check if someone is close
+    isSomeoneClose = checkProximity();
+    counter = 0;
+    if( isSomeoneClose == 1){
+        line1 = String("AVG:" + String( averageTemperature, 3));
+        if(i == 0)
+          line2 = String("Last TEMP: " + String(temperature[24], 3));
+        else
+          line2 = String("Last TEMP: " + String(temperature[i-1], 3));
+
+        printLCD( line1, line2);        
+    }
+  }  
+}
 
 /* loop(): this function is the main function. It executes
  *         continuously.
@@ -91,7 +121,7 @@ void loop() {
   }
 
   /* Calculate Average Temperature */
-  averageTemperature = averageTemperature/24;
+  averageTemperature = sum/24;
   String line1 = String("Avg. Temp.");
   String line2 = String(averageTemperature, 3);
   printLCD( line1, line2);
@@ -197,11 +227,11 @@ int checkProximity(){
     cm = (duration/2) / 29.1;     // Divide by 29.1 or multiply by 0.0343
     inches = (duration/2) / 74;   // Divide by 74 or multiply by 0.0135
   
-    Serial.print(inches);
-    Serial.print("in, ");
-    Serial.print(cm);
-    Serial.print("cm");
-    Serial.println();
+    //Serial.print(inches);
+    //Serial.print("in, ");
+    //Serial.print(cm);
+    //Serial.print("cm");
+    //Serial.println();
     if( cm < 10){
       Serial.println("Somebody is close: " + String(cm) + "cm" );
       return 1;
@@ -226,33 +256,9 @@ float readTemperature(){
   // the datasheet says there's a 500 mV offset
   // ((voltage - 500 mV) times 100)
   int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
-  float voltage = (sensorVal / 1024.0) * 3.1;         // 3.1 is used after calibration. Nomrally 3.3 should be used
+  float voltage = (sensorVal / 1024.0) * 5;         // 3.1 is used after calibration. Nomrally 3.3 should be used
   float temperature = (voltage - .5) * 100;              // since 3.3 V is the Operation Vlotage of MCU.
   String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature, 3));
   Serial.println(printLine);
   return temperature;
-}
-
-/* TIMER2 OVERFLOW INTERRUPT VECTOR: this function checks periodically every 0.5 seconds
- *                                   if someone is nearby. Then it prints average Temperature 
- *                                   and the latest temperature measurment.
- */
-ISR(TIMER2_OVF_vect){
-  counter++;
-  String line1, line2;
-  if( counter == 30){
-    // check if someone is close
-    isSomeoneClose = checkProximity();
-    
-    if( isSomeoneClose == 1){
-        line1 = String("AVG:" + String( averageTemperature, DEC));
-        if(i == 0)
-          line2 = String("Last TEMP: " + String(temperature[24], DEC));
-        else
-          line2 = String("Last TEMP: " + String(temperature[i-1], DEC));
-
-        printLCD( line1, line2);
-        counter = 0;
-    }
-  }
 }
