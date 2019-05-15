@@ -112,7 +112,7 @@ void loop() {
   
   sum = 0;                    // this variable holds the sum of temperatures
   
-  Serial.println("\n\n\nNew Measurement");
+  Serial.println("New Measurement");
   for( i = 0; i < 24; i++){
     delay(5*1000);
    temperature[i] = readTemperature();      
@@ -159,32 +159,36 @@ void printLCD( String line1, String line2){
  */
 void checkExtremeValues( float temperature, int i){
   String line1, line2;
+  bool printMade = false;
+  
   if( temperature < extremeLow){
         if( i >0 ){      
         line1 = String("Warning: LOW");
         line2 = String( "Temp      " + String(temperature, 3));
         printLCD( line1, line2);
+        printMade = true;
       }
-      digitalWrite(BLUE, HIGH);
-      digitalWrite(RED, LOW);
-    }
-    else if( temperature > extremeHigh){
+      digitalWrite(BLUE, HIGH);      
+   }
+   else{
+    digitalWrite(BLUE, LOW);  
+   }
+   
+   if( temperature > extremeHigh){
       if( i > 0){
         line1 = String("Warning: HIGH");
         line2 = String( "Temp      " + String(temperature, 3));
         printLCD( line1, line2);
+        printMade = true;
       }
-      digitalWrite(RED, HIGH); 
-      digitalWrite(BLUE, LOW);   
+      digitalWrite(RED, HIGH);         
     }
     else{
-      if( temperature >= extremeLow)
-        digitalWrite(BLUE, LOW);    
-      if( temperature <= extremeHigh)      
-        digitalWrite(RED, LOW);      
-      if( i > 0)
-        printLCD("Calculating", " ");      
+      digitalWrite(RED, LOW);
     }
+    
+    if( printMade == false && i > 0)     
+       printLCD("Calculating", " ");    
 }
 
 /* checkExtremeFan(): this function is responsible 
