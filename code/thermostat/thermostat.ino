@@ -159,23 +159,29 @@ void printLCD( String line1, String line2){
  */
 void checkExtremeValues( float temperature, int i){
   String line1, line2;
-  if( temperature < extremeLow && i > 0){      
-      line1 = String("Warning: LOW");
-      line2 = String( "Temp      " + String(temperature, 3));
-      printLCD( line1, line2);
+  if( temperature < extremeLow){
+        if( i >0 ){      
+        line1 = String("Warning: LOW");
+        line2 = String( "Temp      " + String(temperature, 3));
+        printLCD( line1, line2);
+      }
       digitalWrite(BLUE, HIGH);
       digitalWrite(RED, LOW);
     }
-    else if( temperature > extremeHigh && i > 0){
-      line1 = String("Warning: HIGH");
-      line2 = String( "Temp      " + String(temperature, 3));
-      printLCD( line1, line2);
+    else if( temperature > extremeHigh){
+      if( i > 0){
+        line1 = String("Warning: HIGH");
+        line2 = String( "Temp      " + String(temperature, 3));
+        printLCD( line1, line2);
+      }
       digitalWrite(RED, HIGH); 
       digitalWrite(BLUE, LOW);   
     }
-    else{            
-      digitalWrite(RED, LOW);
-      digitalWrite(BLUE, LOW);
+    else{
+      if( temperature >= extremeLow)
+        digitalWrite(BLUE, LOW);    
+      if( temperature <= extremeHigh)      
+        digitalWrite(RED, LOW);      
       if( i > 0)
         printLCD("Calculating", " ");      
     }
