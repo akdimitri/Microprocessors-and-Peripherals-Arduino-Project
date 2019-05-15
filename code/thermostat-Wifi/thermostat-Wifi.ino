@@ -240,7 +240,22 @@ void checkExtremeFan(float averageTemperature){
   }   
 }
 
-
+/* readTemperature(): this function is responsible for reading 
+ * temperature sensor and returning temperature value.
+ */
+float readTemperature(){
+  // convert the ADC reading to voltage   
+  // convert the voltage to temperature in degrees C
+  // the sensor changes 10 mV per degree
+  // the datasheet says there's a 500 mV offset
+  // ((voltage - 500 mV) times 100)
+  int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
+  float voltage = (sensorVal / 1024.0) * 3.1;         // 3.1 is used after calibration. Nomrally 3.3 should be used
+  float temperature = (voltage - .5) * 100;              // since 3.3 V is the Operation Vlotage of MCU.
+  String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature, 3));
+  Serial.println(printLine);
+  return temperature;
+}
 
 /* setup(): This function is executed only once at the POWER ON 
  *          or at RESET
@@ -276,29 +291,13 @@ void setup()
  */
 void loop(){
   sum = 0;                    // this variable holds the sum of temperatures
+
+  /* 2 minutes Loop */
   Serial.println("\n\n\nNew Measurement");
   for( i = 0; i < 24; i++){
     delay(5*1000);
-    
-    if( i == 1){              // 10 seconds have elapsed since avg. temp. print on LCD
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("CALCULATING...");
-    }
-    
-    // convert the ADC reading to voltage   
-    // convert the voltage to temperature in degrees C
-    // the sensor changes 10 mV per degree
-    // the datasheet says there's a 500 mV offset
-    // ((voltage - 500 mV) times 100)
-    int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
-    float voltage = (sensorVal / 1024.0) * 3.1;         // 3.1 is used after calibration. Nomrally 3.3 should be used
-    temperature[i] = (voltage - .5) * 100;              // since 3.3 V is the Operation Vlotage of MCU.
-    String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature[i], 3));
-    Serial.println(printLine);
-
-    sum = sum + temperature[i];   
-  
+    temperature[i] = readTemperature();    
+    sum = sum + temperature[i];     
     checkExtremeValues( temperature[i], i);        
  }
 
