@@ -3,7 +3,7 @@ Microprocessors and Peripherals Arduino Project
 
 Authors: 
 
-    1.  Dimitrios Antoniadis
+    1. Dimitrios Antoniadis
     
     2. Vasileios Dimitriadis
     
