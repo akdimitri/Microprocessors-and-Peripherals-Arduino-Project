@@ -8,8 +8,30 @@ Authors:
     2. Vasileios Dimitriadis
     
 ************************************
-University: Aristotle University of Thessaloniki
 
-Subject: Microprocessors and Peripherals
+SUBJECT:	MICROCONTROLLERS AND PERIPHERALS	
 
-Semester: 8th
+ UNIVERSITY:	ARISTOTLE UNIVERISTY OF THESSALONIKI	
+
+ SEMESTER:	8TH					
+
+ DATE:		26/5/2019				
+****************************
+
+*Project: Arduino Thermostat*
+
+*DEV Board:*
+
+    1. Arduino UNO
+    2. Wemos D1 R2
+
+					
+*****************************************
+*****************************************
+ARDUINO
+*****************************************
+*****************************************
+
+1.--- SETUP ---
+
+ 
