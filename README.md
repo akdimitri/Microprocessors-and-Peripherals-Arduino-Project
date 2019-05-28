@@ -28,7 +28,7 @@ SUBJECT:	MICROCONTROLLERS AND PERIPHERALS
 *****************************************
 *****************************************
 
-***ARDUINO***
+*ARDUINO*
 
 File: thermostat/thermostat.ino
 
