@@ -231,7 +231,7 @@ Files:
  this function is responsible for cheking wether
  temperature is Greater than a high value or
  Lower than a low value. Accordingly, this function
- turns on/off BLUE/RED LEDS and prints respectively 
+ prints respectively 
  on LCD the suitable message. LCD is used only after
  i > 0 and that's because only then 10 secs have elapsed
  since previous average value print.
