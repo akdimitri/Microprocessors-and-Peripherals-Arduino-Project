@@ -17,9 +17,9 @@ SUBJECT:	MICROCONTROLLERS AND PERIPHERALS
  DATE:		26/5/2019				
 ****************************
 
-*Project: Arduino Thermostat
+*Project: Arduino Thermostat*
 
-*DEV Board:
+*DEV Board:*
 
     1. Arduino UNO
     2. Wemos D1 R2
@@ -28,7 +28,7 @@ SUBJECT:	MICROCONTROLLERS AND PERIPHERALS
 *****************************************
 *****************************************
 
-***ARDUINO
+***ARDUINO***
 
 File: thermostat/thermostat.ino
 
