@@ -167,12 +167,12 @@ File: thermostat-Wifi/thermostat-Wifi.ino
  
 ---------------------------------
 	
-	1. Define PINs Mode
+	1. Connect to Wifi
 	2. Setup LCD
 	3. Setup HC-SR04
-	4. Enable TIMER2 OVERFLOW INTERRUPT
+	4. Enable Software Interrupt
 	5. Setup Serial Communication
-	6. Enable Interrupts Globally
+	
 	
 2.--- LOOP ---
 
@@ -206,7 +206,7 @@ File: thermostat-Wifi/thermostat-Wifi.ino
 	
 	1. INCREASE COUNTER
 	2. IF COUNTER EQU
-CHECK IF SOMEBODY IS CLOSE
+	CHECK IF SOMEBODY IS CLOSE
 		IF YES THEN PRINT LAST AVG TEMP (averageTemperature) AND LAST MEASURED TEMPERATURE (temperature[i-1])
 		COUNTER = 0
 		
@@ -245,6 +245,13 @@ CHECK IF SOMEBODY IS CLOSE
  to be turned on.
  
 --------------------------------------------------
+
+	1. IF averageTemperature IS GREATER THAN extremeFan
+		IF FAN is TURNED OFF
+			TURN ON FAN
+			SEND EMAIL
+	   ELSE
+	   	TURN OFF FAN
 
 7.--- checkProximity ---
 
