@@ -154,7 +154,7 @@ WEMOS D1 R2
 File: 
 
 	thermostat-Wifi/thermostat-Wifi.ino
-       		       /Gsender.H:   contains INFORMATION about sending e-mail 
+		       /Gsender.h:   contains INFORMATION about sending e-mail 
 		       /Gsender.cpp: implements e-mail sending
 
 *****************************************
