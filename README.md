@@ -28,7 +28,7 @@ SUBJECT:	MICROCONTROLLERS AND PERIPHERALS
 *****************************************
 *****************************************
 
-*ARDUINO*
+**ARDUINO**
 
 File: thermostat/thermostat.ino
 
@@ -36,6 +36,7 @@ File: thermostat/thermostat.ino
 *****************************************
 
 1.--- SETUP ---
+
 ------------------------------------------
 
  This function is executed only once at the POWER ON 
@@ -51,6 +52,7 @@ File: thermostat/thermostat.ino
 	6. Enable Interrupts Globally
 	
 2.--- LOOP ---
+
 -------------------------
 
  this function is the main function. It executes
@@ -70,7 +72,8 @@ File: thermostat/thermostat.ino
 		ELSE TURN IT OFF
 		
 3.--- TIMER2_OVF_vect ---
---------------------------------
+
+-------------------------------
 
  this function checks periodically every 0.5 seconds
  if someone is nearby. Then it prints average Temperature 
@@ -86,6 +89,7 @@ File: thermostat/thermostat.ino
 		
 		
 4.--- printLCD ---
+
 ------------------------
 	
  this function is responsible for
@@ -96,6 +100,7 @@ File: thermostat/thermostat.ino
 
 
 5.--- checkExtremeValues ---
+
 ------------------------------------------
 
  this function is responsible for cheking wether
@@ -109,6 +114,7 @@ File: thermostat/thermostat.ino
 ---------------------------------------------------------
 
 6.--- checkExtremeFan ---
+
 ------------------------------------------------
 
  this function is responsible 
@@ -118,6 +124,7 @@ File: thermostat/thermostat.ino
 --------------------------------------------------
 
 7.--- checkProximity ---
+
 -----------------------------------
 
  this function is responsible for acknowledging wheter 
@@ -126,6 +133,7 @@ File: thermostat/thermostat.ino
 -------------------------------------
 
 8.--- readTemperature ---
+
 --------------------------------------
 
  this function is responsible for reading 
