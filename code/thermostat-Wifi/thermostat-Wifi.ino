@@ -24,8 +24,8 @@
 
 /* Global Variable Declaration */
 Ticker INTERRUPT;
-const char* ssid = "Dimitris2";                             // WIFI network name
-const char* password = "69451070306945558718";              // WIFI network password
+const char* ssid = "Dimitris21";                             // WIFI network name
+const char* password = "21111996";              // WIFI network password
 uint8_t connection_state = 0;                               // Connected to WIFI or not
 uint16_t reconnect_interval = 10000;                        // If not connected wait time to try again
 const int sensorPin = A0;
@@ -193,10 +193,10 @@ void checkExtremeValues( float temperature, int i){
         printLCD( line1, line2);
         printMade = true;
       }
-      digitalWrite(BLUE, HIGH);      
+      //digitalWrite(BLUE, HIGH);      
    }
    else{
-    digitalWrite(BLUE, LOW);  
+    //digitalWrite(BLUE, LOW);  
    }
    
    if( temperature > extremeHigh){
@@ -206,10 +206,10 @@ void checkExtremeValues( float temperature, int i){
         printLCD( line1, line2);
         printMade = true;
       }
-      digitalWrite(RED, HIGH);         
+      //digitalWrite(RED, HIGH);         
     }
     else{
-      digitalWrite(RED, LOW);
+      //digitalWrite(RED, LOW);
     }
     
     if( printMade == false && i > 0)     
