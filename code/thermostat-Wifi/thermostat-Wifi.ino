@@ -24,8 +24,8 @@
 
 /* Global Variable Declaration */
 Ticker INTERRUPT;
-const char* ssid = "Dimitris21";                             // WIFI network name
-const char* password = "21111996";              // WIFI network password
+const char* ssid = "WIFI-NAME";                             // WIFI network name
+const char* password = "WIFI-PASSWORD";              // WIFI network password
 uint8_t connection_state = 0;                               // Connected to WIFI or not
 uint16_t reconnect_interval = 10000;                        // If not connected wait time to try again
 const int sensorPin = A0;
@@ -232,7 +232,7 @@ void checkExtremeFan(float averageTemperature){
       String subject = "FAN = ON!";
       String value = String(averageTemperature, 3);
       String message = String("FAN TURNED ON : " + value);
-      if(gsender->Subject(subject)->Send("mitsos1996@yahoo.com", message)) {
+      if(gsender->Subject(subject)->Send("RECEIVER-EMAIL", message)) {
           Serial.println("Message send.");
       } else {
           Serial.print("Error sending message: ");
