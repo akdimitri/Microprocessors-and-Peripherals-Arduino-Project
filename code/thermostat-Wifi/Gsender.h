@@ -16,9 +16,9 @@ class Gsender
     private:
         const int SMTP_PORT = 465;
         const char* SMTP_SERVER = "smtp.gmail.com";
-        const char* EMAILBASE64_LOGIN = "bWN1LjIwMTkud2Vtb3NAZ21haWwuY29t";
-        const char* EMAILBASE64_PASSWORD = "REBuKzAxOTk2";
-        const char* FROM = "mcu.2019.wemos@gmail.com";
+        const char* EMAILBASE64_LOGIN = "ENTER_YOUR_LOGIN_INFO_IN_BASE64";          // transform your LOGIN info to Base 64
+        const char* EMAILBASE64_PASSWORD = "ENTER_YOUR_LOGIN_INFO_IN_BASE64";
+        const char* FROM = "SENDER_EMAIL";
         const char* _error = nullptr;
         char* _subject = nullptr;
         String _serverResponce;
