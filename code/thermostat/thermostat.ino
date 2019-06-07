@@ -266,8 +266,8 @@ float readTemperature(){
   // the datasheet says there's a 500 mV offset
   // ((voltage - 500 mV) times 100)
   int sensorVal = analogRead(sensorPin);    // read TMP36 value in Volts
-  float voltage = (sensorVal / 1024.0) * 5;         // 3.1 is used after calibration. Nomrally 3.3 should be used
-  float temperature = (voltage - .5) * 100;              // since 3.3 V is the Operation Vlotage of MCU.
+  float voltage = (sensorVal / 1024.0) * 5;         // 5 Vlots Refernce Value
+  float temperature = (voltage - .5) * 100;              
   String printLine = String(String(i) + ". sensor Value: " + String(sensorVal) + ", Volts: " + String(voltage, 3) + ", degrees C: " + String(temperature, 3));
   Serial.println(printLine);
   return temperature;
